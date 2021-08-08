@@ -18,6 +18,14 @@ interface GenreResponseProps {
 
 interface MovieProps {
   imdbID: string;
+  title: string;
+  poster: string;
+  rating: string
+  runtime: string;
+}
+
+interface MovieResponseProps {
+  imdbID: string;
   Title: string;
   Poster: string;
   Ratings: Array<{
@@ -33,7 +41,7 @@ export function App() {
   const [genres, setGenres] = useState<GenreResponseProps[]>([]);
 
   const [movies, setMovies] = useState<MovieProps[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<GenreResponseProps>({} as GenreResponseProps);
+  const [titleSelectedGenre, setTitleSelectedGenre] = useState<string>('');
 
   useEffect(() => {
     api.get<GenreResponseProps[]>('genres').then(response => {
@@ -42,14 +50,20 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    api.get<MovieProps[]>(`movies/?Genre_id=${selectedGenreId}`).then(response => {
-      setMovies(response.data);
-    });
-
-    api.get<GenreResponseProps>(`genres/${selectedGenreId}`).then(response => {
-      setSelectedGenre(response.data);
-    })
-  }, [selectedGenreId]);
+    if(genres[0]) {
+      api.get<MovieResponseProps[]>(`movies/?Genre_id=${selectedGenreId}`).then(response => {        
+        setMovies(response.data.map(dataMovie => ({
+          imdbID: dataMovie.imdbID,
+          title: dataMovie.Title,
+          poster: dataMovie.Poster,
+          runtime: dataMovie.Runtime,
+          rating: dataMovie.Ratings[0].Value
+        })));
+      });
+  
+      setTitleSelectedGenre(genres.find((genre) => genre.id === selectedGenreId)?.title || '')
+    }
+  }, [selectedGenreId, genres]);
 
   function handleClickButton(id: number) {
     setSelectedGenreId(id);
@@ -63,10 +77,7 @@ export function App() {
         buttonClickCallback={handleClickButton}
       />
 
-      <Content
-        selectedGenre={selectedGenre}
-        movies={movies}
-      />
+      <Content titleSelectedGenre={titleSelectedGenre} movies={movies} />
     </div>
   )
 }
